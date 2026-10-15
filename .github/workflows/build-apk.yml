@@ -34,7 +34,10 @@ jobs:
           chmod +x node_modules/.bin/cap
 
       - name: Build notification bundle
-        run: npx esbuild native-notifications.js --bundle --format=iife --outfile=notifications.bundle.js
+        run: |
+          chmod +x node_modules/.bin/esbuild
+          chmod +x node_modules/esbuild/bin/esbuild
+          node node_modules/esbuild/bin/esbuild native-notifications.js --bundle --format=iife --outfile=notifications.bundle.js
 
       - name: Copy web files into www
         run: |
