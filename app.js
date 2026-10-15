@@ -236,6 +236,58 @@ async function checkAlerts() {
   }
 }
 
+
+let lastSignalNotice = "";
+
+async function notifySignal(signal, symbol) {
+  if (!["BUY", "SELL"].includes(signal)) {
+    lastSignalNotice = "";
+    return;
+  }
+
+  const key = `${signal}-${symbol}`;
+
+  if (key === lastSignalNotice) return;
+  lastSignalNotice = key;
+
+  if (localStorage.getItem("alerts") !== "1") return;
+
+  const title = `Macro Trader: ${signal} ${symbol}`;
+  const body = "A new trading signal was calculated. Check the event data and confirm the setup before trading.";
+
+  try {
+    if (isNativeApp() && window.LocalNotifications) {
+      const permission =
+        await window.LocalNotifications.checkPermissions();
+
+      if (permission.display !== "granted") return;
+
+      await window.LocalNotifications.schedule({
+        notifications: [{
+          id: makeNotificationId("signal", Date.now()),
+          title,
+          body,
+          schedule: { at: new Date(Date.now() + 1000) }
+        }]
+      });
+
+    } else if (
+      "Notification" in window &&
+      Notification.permission === "granted"
+    ) {
+      const registration = await navigator.serviceWorker.ready;
+
+      await registration.showNotification(title, {
+        body,
+        icon: "icons/icon-192.png",
+        tag: "macro-trader-signal"
+      });
+    }
+  } catch (error) {
+    console.error("Signal notification failed:", error);
+  }
+}
+
 $("notify").addEventListener("click", enableAlerts);
 
 if (localStorage.getItem("alerts") === "1") {
@@ -287,8 +339,13 @@ function runSignal() {
            `Confirm with the gauge below, wait for a 5-minute candle close, and put your stop beyond the spike high/low.`;
   }
   const box = $("signal");
-  box.className = sig; box.textContent = `${sig} ${symbol.split(":")[1]}`; box.style.display = "block";
+    box.className = sig;
+  box.textContent = `${sig} ${symbol.split(":")[1]}`;
+  box.style.display = "block";
+
   $("why").textContent = text;
+
+  notifySignal(sig, symbol.split(":")[1]);
 }
 $("forecast").addEventListener("input", runSignal);
 $("actual").addEventListener("input", runSignal);

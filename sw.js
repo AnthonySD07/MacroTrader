@@ -10,4 +10,33 @@ self.addEventListener("fetch", e => {
   if (url.origin !== location.origin) return; // never cache API or TradingView calls
   e.respondWith(fetch(e.request).then(r => { const c = r.clone(); caches.open(CACHE).then(x => x.put(e.request, c)); return r; })
     .catch(() => caches.match(e.request)));
+
+
+
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+
+  event.waitUntil((async () => {
+    const target = new URL(
+      event.notification.data?.url || "./index.html",
+      self.registration.scope
+    ).href;
+
+    const windows = await self.clients.matchAll({
+      type: "window",
+      includeUncontrolled: true
+    });
+
+    for (const client of windows) {
+      if (client.url.startsWith(self.registration.scope)) {
+        await client.focus();
+        await client.navigate(target);
+        return;
+      }
+    }
+
+    await self.clients.openWindow(target);
+  })());
 });
+
+  });
