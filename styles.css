@@ -1,0 +1,22 @@
+:root { --bg:#0f1419; --card:#1a222c; --text:#e8edf2; --muted:#8a97a6; --buy:#16c784; --sell:#ea3943; --wait:#f5a623; --blue:#2f6feb; }
+* { box-sizing: border-box; }
+body { margin:0; font-family: system-ui, -apple-system, sans-serif; background:var(--bg); color:var(--text);
+  padding: env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + 12px); max-width:900px; margin-inline:auto; }
+h1 { font-size:1.3rem; margin:12px 0 2px; }
+header { margin-bottom:8px; }
+.muted { color:var(--muted); font-size:.85rem; }
+.card { background:var(--card); border-radius:12px; padding:14px; margin-bottom:12px; display:block; }
+#countdown { font-size:2rem; font-weight:700; margin:6px 0; }
+select, input, button { font-size:1rem; padding:10px; border-radius:8px; border:1px solid #2c3846; background:#0f1419; color:var(--text); width:100%; margin-top:6px; }
+button { background:var(--blue); border:none; font-weight:600; cursor:pointer; }
+button.secondary { background:#26313f; font-weight:500; }
+.row { display:flex; gap:10px; } .row > div { flex:1; }
+nav { display:flex; gap:8px; margin-bottom:12px; position:sticky; top:0; background:var(--bg); padding:6px 0; z-index:5; }
+nav button { margin:0; background:#26313f; }
+nav button.active { background:var(--blue); }
+#signal { font-size:1.6rem; font-weight:800; text-align:center; padding:14px; border-radius:10px; margin-top:10px; display:none; }
+.BUY { background:var(--buy); color:#04210f; } .SELL { background:var(--sell); } .WAIT { background:var(--wait); color:#2a1b00; }
+ul { padding-left:18px; margin:6px 0; } li { margin:4px 0; }
+.tv { height:420px; margin-bottom:12px; } .tv.small { height:380px; }
+#why, #status { margin-top:8px; }
+summary { cursor:pointer; }

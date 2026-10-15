@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1419">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MacroTrader">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+<title>Macro Trader</title>
+</head>
+<body>
+<header>
+  <h1>📈 Macro Trader</h1>
+  <div id="nextUp" class="muted"></div>
+</header>
+
+<nav id="tabs">
+  <button data-ev="CPI" class="active">CPI</button>
+  <button data-ev="NFP">NFP</button>
+  <button data-ev="FOMC">Fed Rate</button>
+</nav>
+
+<main>
+  <section class="card">
+    <div class="muted" id="evTitle"></div>
+    <div id="countdown">--</div>
+    <div id="when"></div>
+    <div class="muted" id="ref"></div>
+    <button id="notify" class="secondary">🔔 Alert me 15 min before</button>
+  </section>
+
+  <section class="card">
+    <label class="muted">Market</label>
+    <select id="market">
+      <option value="FX:EURUSD|SELL_ON_HOT">EURUSD (recommended)</option>
+      <option value="OANDA:XAUUSD|SELL_ON_HOT">XAUUSD (gold, very volatile)</option>
+      <option value="FX:GBPUSD|SELL_ON_HOT">GBPUSD</option>
+      <option value="FX:USDJPY|BUY_ON_HOT">USDJPY</option>
+    </select>
+  </section>
+
+  <section class="card">
+    <b>Buy or sell?</b>
+    <div class="row">
+      <div><label class="muted">Forecast <span class="unit"></span></label><input id="forecast" type="number" step="any"></div>
+      <div><label class="muted">Actual <span class="unit"></span></label><input id="actual" type="number" step="any"></div>
+    </div>
+    <div id="signal"></div>
+    <div id="why" class="muted"></div>
+    <div id="status" class="muted">Loading forecast...</div>
+  </section>
+
+  <section class="card">
+    <b>Rules</b>
+    <ul class="muted">
+      <li>Stronger than forecast (or more hawkish Fed) = USD up. Weaker = USD down.</li>
+      <li>Skip the first 1–2 minutes: spreads are wide and price whipsaws.</li>
+      <li>Only trade if the TradingView gauge agrees with the signal.</li>
+      <li>Risk 1% or less per trade and always use a stop loss.</li>
+    </ul>
+  </section>
+
+  <div class="tv" id="chart"></div>
+  <div class="tv small" id="ta"></div>
+
+  <div class="muted" style="margin:4px 2px">Live US economic calendar. The Actual number appears here the moment it is released.</div>
+  <div class="tv small" id="cal"></div>
+
+  <p class="muted">Not financial advice. Dates come from the official BLS and Federal Reserve calendars; check them before trading. Trading is risky.</p>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
