@@ -81,28 +81,174 @@ function tick() {
 }
 setInterval(tick, 1000);
 
-// ================= NOTIFICATIONS =================
-// Works while the app is open (browsers do not allow reliable background timers without a server).
-function checkAlerts() {
-  if (localStorage.getItem("alerts") !== "1" || Notification.permission !== "granted") return;
-  for (const k of Object.keys(EVENTS)) {
-    const r = nextRelease(k);
-    if (!r) continue;
-    const mins = (r.t - Date.now()) / 60000;
-    const id = "notified-" + k + r.t.getTime();
-    if (mins <= 15 && mins > 0 && !sessionStorage.getItem(id)) {
+
+ // ================= NOTIFICATIONS =================
+
+const isNativeApp = () =>
+  !!window.Capacitor?.isNativePlatform?.();
+
+function makeNotificationId(key, timestamp) {
+  const input = `${key}-${timestamp}`;
+  let hash = 0;
+
+  for (const char of input) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  }
+
+  return (hash % 2000000000) + 1;
+}
+
+async function scheduleNativeAlerts() {
+  const plugin = window.LocalNotifications;
+  if (!plugin) throw new Error("Notification plugin not loaded.");
+
+  let permission = await plugin.checkPermissions();
+
+  if (permission.display !== "granted") {
+    permission = await plugin.requestPermissions();
+  }
+
+  if (permission.display !== "granted") {
+    throw new Error("Notification permission was not granted.");
+  }
+
+  // Cancel previously scheduled alerts before rebuilding the schedule.
+  const pending = await plugin.getPending();
+
+  if (pending.notifications.length) {
+    await plugin.cancel({
+      notifications: pending.notifications
+    });
+  }
+
+  const now = Date.now();
+  const notifications = [];
+
+  for (const key of Object.keys(EVENTS)) {
+    for (const date of EVENTS[key].dates) {
+      const release = releaseTime(key, date);
+      const alertAt = new Date(release.getTime() - 15 * 60000);
+
+      if (alertAt.getTime() <= now) continue;
+
+      notifications.push({
+        id: makeNotificationId(key, release.getTime()),
+        title: `${EVENTS[key].name} in 15 minutes`,
+        body: `${date[1]}. Open Macro Trader to prepare.`,
+        schedule: { at: alertAt },
+        extra: {
+          event: key,
+          releaseTime: release.toISOString()
+        }
+      });
+    }
+  }
+
+  if (notifications.length) {
+    await plugin.schedule({ notifications });
+  }
+
+  return notifications.length;
+}
+
+async function enableAlerts() {
+  const button = $("notify");
+  button.disabled = true;
+  button.textContent = "Enabling alerts...";
+
+  try {
+    if (isNativeApp()) {
+      const count = await scheduleNativeAlerts();
+
+      localStorage.setItem("alerts", "1");
+      button.textContent = count
+        ? `🔔 Alerts on (${count} scheduled)`
+        : "🔔 Enabled — no future dates";
+
+      return;
+    }
+
+    if (!("Notification" in window) ||
+        !("serviceWorker" in navigator)) {
+      button.textContent = "Notifications unsupported";
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+
+    if (permission !== "granted") {
+      button.textContent = "Allow notifications in browser settings";
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+
+    localStorage.setItem("alerts", "1");
+    button.textContent = "🔔 Web alerts enabled";
+
+    checkAlerts();
+
+  } catch (error) {
+    console.error("Notification setup failed:", error);
+    button.textContent = "Alert setup failed — tap to retry";
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function checkAlerts() {
+  if (localStorage.getItem("alerts") !== "1") return;
+  if (isNativeApp()) return;
+
+  if (!("Notification" in window) ||
+      Notification.permission !== "granted") return;
+
+  for (const key of Object.keys(EVENTS)) {
+    const release = nextRelease(key);
+    if (!release) continue;
+
+    const mins = (release.t.getTime() - Date.now()) / 60000;
+    const id = `notified-${key}-${release.t.getTime()}`;
+
+    if (mins <= 15 && mins > 0 &&
+        !sessionStorage.getItem(id)) {
+
+      // Prevent repeated notifications during the countdown.
       sessionStorage.setItem(id, "1");
-      new Notification(`${EVENTS[k].name} in ${Math.ceil(mins)} min`, { body: "Open Macro Trader and get ready.", icon: "icons/icon-192.png" });
+
+      try {
+        const registration = await navigator.serviceWorker.ready;
+
+        await registration.showNotification(
+          `${EVENTS[key].name} in ${Math.ceil(mins)} minutes`,
+          {
+            body: "Open Macro Trader and prepare for the release.",
+            icon: "icons/icon-192.png",
+            badge: "icons/icon-192.png",
+            tag: id,
+            data: { url: "./index.html" }
+          }
+        );
+      } catch (error) {
+        console.error("Could not show web notification:", error);
+      }
     }
   }
 }
-$("notify").addEventListener("click", async () => {
-  if (!("Notification" in window)) { $("notify").textContent = "Notifications not supported here"; return; }
-  const p = await Notification.requestPermission();
-  if (p === "granted") { localStorage.setItem("alerts", "1"); $("notify").textContent = "🔔 Alerts on (keep app open)"; }
-  else $("notify").textContent = "Notifications blocked in browser settings";
-});
-if (localStorage.getItem("alerts") === "1") $("notify").textContent = "🔔 Alerts on (keep app open)";
+
+$("notify").addEventListener("click", enableAlerts);
+
+if (localStorage.getItem("alerts") === "1") {
+  $("notify").textContent = "🔔 Alerts enabled";
+
+  if (isNativeApp()) {
+    scheduleNativeAlerts().catch(error => {
+      console.error("Could not reschedule alerts:", error);
+      $("notify").textContent = "Tap to enable alerts";
+    });
+  }
+}
+
 
 // ================= TRADINGVIEW =================
 function widget(id, script, config) {
