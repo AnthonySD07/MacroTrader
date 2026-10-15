@@ -45,12 +45,7 @@ jobs:
           cp index.html app.js styles.css manifest.webmanifest sw.js notifications.bundle.js www/
           cp -r icons www/
 
-      - name: Install and create Android project
-        run: |
-          npm install
-          npx cap add android
-          npx cap sync android
-
+      
       - name: Sync Android project
         run: npx --no-install cap sync android
 
